@@ -1,9 +1,8 @@
 using StringTools;
 
 import as3hx.Writer;
-import neko.FileSystem;
-import neko.io.File;
-import neko.Sys;
+import sys.FileSystem;
+import sys.io.File;
 
 class Run {
 	
@@ -20,15 +19,15 @@ class Run {
 	static function loop( src: String, dst : String, excludes: List<String> ) {
 		var subs = [];
 		var writer = new Writer(cfg);
-		for( f in neko.FileSystem.readDirectory(src) ) {
+		for( f in FileSystem.readDirectory(src) ) {
 			if( f.endsWith(".as") && !isExcludeFile(excludes, src + "/" + f) ) {
 				var p = new as3hx.Parser(cfg);
 				var file = src + "/" + f;
-				neko.Lib.println(file);
-				var content = neko.io.File.getContent(file);
+				Sys.println(file);
+				var content = File.getContent(file);
 				var program = try p.parseString(content,src,f) catch( e : as3hx.Parser.Error ) {
 					#if macro
-					neko.io.File.stderr().writeString(file+":"+p.line+": "+errorString(e)+"\n");
+					File.stderr().writeString(file+":"+p.line+": "+errorString(e)+"\n");
 					#end
 					if(cfg.errorContinue) {
 						errors.push("In " + file + "("+p.line+") : " + errorString(e));
@@ -40,13 +39,13 @@ class Run {
 				var out = dst + "/" + Writer.properCaseA(program.pack,false).join("/");
 				ensureDirectoryExists(out);
 				var name = out + "/" + Writer.properCase(f.substr(0, -3),true) + ".hx";
-				neko.Lib.println(name);
+				Sys.println(name);
 				var fw = File.write(name, false);
 				warnings.set(name, writer.process(program, fw));
 				fw.close();
 			}
 			var sub = src + "/" + f;
-			if ( neko.FileSystem.isDirectory(sub) )
+			if ( FileSystem.isDirectory(sub) )
 			{
 				subs.push(sub);
 			}
@@ -56,21 +55,21 @@ class Run {
 	}
 
 	static function isExcludeFile(excludes: List<String>, file: String) 
-		return Lambda.filter(excludes, function (path) return as3hx.Config.toPath(file).indexOf(path.replace(".", "/")) > -1).length > 0
+		return Lambda.filter(excludes, function (path) return as3hx.Config.toPath(file).indexOf(path.replace(".", "/")) > -1).length > 0;
 
 	static var errors : Array<String> = new Array();
-	static var warnings : Hash<Hash<Bool>> = new Hash();
+	static var warnings : Map<String, Map<String, Bool>> = new Map();
 	static var cfg : as3hx.Config;
 	public static function main() {
 		cfg = new as3hx.Config();
 		loop(cfg.src, cfg.dst, cfg.excludePaths);
-		neko.Lib.println("");
+		Sys.println("");
 		Writer.showWarnings(warnings);
-		neko.Lib.println("");
+		Sys.println("");
 		if(errors.length > 0) {
-			neko.Lib.println("ERRORS: These files were not written due to source parsing errors:");
+			Sys.println("ERRORS: These files were not written due to source parsing errors:");
 			for(i in errors)
-				neko.Lib.println(i);
+				Sys.println(i);
 		}
 	}
 

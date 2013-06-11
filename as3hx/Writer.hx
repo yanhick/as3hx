@@ -50,12 +50,12 @@ class Writer
 	var lvl : Int;
 	var o : Output;
 	var cfg : Config;
-	var warnings : Hash<Bool>; // warning->isError
+	var warnings : Map<String, Bool>; // warning->isError
 	var loopIncrements : Array<Expr>;
 	var varCount : Int; // vars added for ESwitch or EFor initialization
 	var isInterface : Bool; // set if current class is an interface
-	var context : Hash<String>;
-	var contextStack : Array<Hash<String>>;
+	var context : Map<String, String>;
+	var contextStack : Array<Map<String, String>>;
 	var inArrayAccess : Bool;
 	var inE4XFilter : Bool;
 	var inLvalAssign : Bool; // current expr is lvalue in assignment (expr = valOfSomeSort)
@@ -66,7 +66,7 @@ class Writer
 		this.lvl = 0;
 		this.cfg = config;
 		this.varCount = 0;
-		this.context = new Hash();
+		this.context = new Map();
 		this.contextStack = new Array();
 		this.inArrayAccess = false;
 		this.inE4XFilter = false;
@@ -77,7 +77,7 @@ class Writer
 	 * Opens a new context for variable typing
 	 **/
 	function openContext() {
-		var c = new Hash();
+		var c = new Map();
 		for(k in context.keys())
 			c.set(k, context.get(k));
 		contextStack.push(context);
@@ -205,7 +205,7 @@ class Writer
 	function writeProperties(c : ClassDef)
 	{
 		var p = [];
-		var h = new Hash();
+		var h = new Map();
 		var getOrCreateProperty = function(name, t, stat)
 		{
 			var property = h.get(name);
@@ -1758,7 +1758,7 @@ class Writer
 	
 	public function process(program : Program, writer : Output)
 	{
-		this.warnings = new Hash();
+		this.warnings = new Map();
 		this.o = writer;
 		writeComments(program.header);
 		writePackage(program.pack);
@@ -1774,8 +1774,8 @@ class Writer
 	 * warning is affecting, so that the porter can more easily determine
 	 * the fix.
 	 **/
-	public static function showWarnings(allWarnings : Hash<Hash<Bool>>) {
-		var wke : Hash<Array<String>> = new Hash(); // warning->files
+	public static function showWarnings(allWarnings : Map<String, Map<String, Bool>>) {
+		var wke : Map<String, Array<String>> = new Map(); // warning->files
 		for(filename in allWarnings.keys()) {
 			for(errname in allWarnings.get(filename).keys()) {
 				var a = wke.get(errname);
@@ -1784,7 +1784,7 @@ class Writer
 				wke.set(errname,a);
 			}
 		}
-		var println = neko.Lib.println;
+		var println = Sys.println;
 		for(warn in wke.keys()) {
 			var a = wke.get(warn);
 			if(a.length > 0) {

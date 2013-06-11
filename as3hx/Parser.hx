@@ -24,6 +24,8 @@
  */
 package as3hx;
 import as3hx.As3;
+import haxe.ds.GenericStack;
+import sys.FileSystem;
 
 enum Error {
 	EInvalidChar( c : Int );
@@ -66,7 +68,7 @@ class Parser {
 	public var line : Int;
 	public var pc : Int;
 	public var identChars : String;
-	public var opPriority : Hash<Int>;
+	public var opPriority : Map<String, Int>;
 	public var unopsPrefix : Array<String>;
 	public var unopsSuffix : Array<String>;
 
@@ -75,7 +77,7 @@ class Parser {
 	var char : Int;
 	var ops : Array<Bool>;
 	var idents : Array<Bool>;
-	var tokens : haxe.FastList<Token>;
+	var tokens : GenericStack<Token>;
 	var path : String;
 	var filename : String;
 	var cfg : Config;
@@ -98,7 +100,7 @@ class Parser {
 			["?:"],
 			["=", "+=", "-=", "*=", "%=", "/=", "<<=", ">>=", ">>>=", "&=", "^=", "|=", "&&=", "||="]
 		];
-		opPriority = new Hash();
+		opPriority = new Map();
 		for( i in 0...p.length )
 			for( op in p[i] )
 				opPriority.set(op, i);
@@ -122,7 +124,7 @@ class Parser {
 		input = s;
 		ops = new Array();
 		idents = new Array();
-		tokens = new haxe.FastList<Token>();
+		tokens = new GenericStack<Token>();
 		for( op in opPriority.keys() )
 			for( i in 0...op.length )
 				ops[op.charCodeAt(i)] = true;
@@ -141,8 +143,8 @@ class Parser {
 		filename = parts.pop();
 		path = parts.join("/");
 		openDebug("Parsing included file " + file + "\n");
-		if (!neko.FileSystem.exists(file)) throw "Error: file '" + file + "' does not exist, at " + oldLine;
-		var content = neko.io.File.getContent(file);
+		if (!FileSystem.exists(file)) throw "Error: file '" + file + "' does not exist, at " + oldLine;
+		var content = sys.io.File.getContent(file);
 		line = 1;
 		input = new haxe.io.StringInput(content);
 		try {
@@ -434,7 +436,7 @@ class Parser {
 								case CString(path):
 									var oldClosed = closed;
 									closed = false;
-									parseInclude(path,callback(pf, true));
+									parseInclude(path, pf.bind(true));
 									end();
 									closed = oldClosed;
 								default:
@@ -758,7 +760,7 @@ class Parser {
 							case TConst(c):
 								switch(c) {
 									case CString(path):
-										parseInclude(path,callback(pf, true));
+										parseInclude(path, pf.bind(true));
 										end();
 									default:
 										unexpected(t);
@@ -1274,12 +1276,12 @@ class Parser {
 									switch (e2) {
 										case ECall(e4, a): 
 											EBinop(op, ECall(EField(EIdent("Type"), "createInstance"), [e4, EArrayDecl(a)]), e3);
-										default: 
+										default: null;
 									}
 								} 
-							default: 
+							default: null;
 						}
-					default: 
+					default: null;
 				}
 				if (cc != null) cc; else ENew(t,if( opt(TPOpen) ) parseExprList(TPClose) else []);
 			}
