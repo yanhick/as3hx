@@ -1279,6 +1279,8 @@ class Parser {
 										default: null;
 									}
 								} 
+								return null;
+								
 							default: null;
 						}
 					default: null;
